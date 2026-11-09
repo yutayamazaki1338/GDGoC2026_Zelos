@@ -16,13 +16,13 @@ Including another URLconf
 """
 
 from django.urls import path
-from api.views import health, posts
+from api.views import health, gets_all_posts, my_posts
 from api.profile_views import initialize_profile, my_profile
 
 from django.urls import path
 from api.views import (
     health,
-    posts,
+    gets_all_posts,
     my_profile,
     my_posts,
 )
@@ -30,7 +30,7 @@ from api.views import (
 urlpatterns = [
     path("", health),
     path("health", health),
-    path("posts", posts),
+    path("posts", gets_all_posts),
     path("users/me", my_profile),
     path("users/me/initialize", initialize_profile),
     path("users/me/posts", my_posts),

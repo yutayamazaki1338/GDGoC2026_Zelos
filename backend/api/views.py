@@ -9,7 +9,7 @@ def health(request):
     return JsonResponse({"status": "ok"})
 
 
-def posts(request):
+def gets_all_posts(request):
     """全ユーザーの投稿一覧を取得する"""
 
     db = firestore.Client()
