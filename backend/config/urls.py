@@ -18,8 +18,20 @@ Including another URLconf
 from django.urls import path
 from api.views import health, posts
 
+
+from django.urls import path
+from api.views import (
+    health,
+    posts,
+    my_profile,
+    my_posts,
+)
+
 urlpatterns = [
     path("", health),
     path("health", health),
     path("posts", posts),
+    path("users/me", my_profile),
+    path("users/me/posts", my_posts),
 ]
+

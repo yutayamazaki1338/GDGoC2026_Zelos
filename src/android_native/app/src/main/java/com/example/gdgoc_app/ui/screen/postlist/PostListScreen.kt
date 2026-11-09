@@ -113,13 +113,13 @@ fun PostListScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = "投稿はまだありません",
-                            style = MaterialTheme.textTheme.titleMedium,
+                            style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "右上の更新ボタンを押すと再読み込みします",
-                            style = MaterialTheme.textTheme.bodySmall,
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.outline
                         )
                     }

@@ -6,13 +6,13 @@ import com.example.gdgoc_app.data.model.Post
 import com.example.gdgoc_app.data.model.User
 import com.example.gdgoc_app.data.repository.AuthRepository
 import com.example.gdgoc_app.data.repository.PostRepository
-import com.example.gdgoc_app.data.repository.UserRepository
 import com.example.gdgoc_app.di.ServiceLocator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 
 data class MyPageUiState(
     val isLoading: Boolean = false,
@@ -24,7 +24,6 @@ data class MyPageUiState(
 )
 
 class MyPageViewModel(
-    private val userRepository: UserRepository = ServiceLocator.userRepository,
     private val postRepository: PostRepository = ServiceLocator.postRepository,
     private val authRepository: AuthRepository = ServiceLocator.authRepository
 ) : ViewModel() {
@@ -40,7 +39,8 @@ class MyPageViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
-                val user = userRepository.getMyProfile()
+                val user = authRepository.currentUser.value ?: error("ログインが必要です")
+                _uiState.update { it.copy(user = user) }
                 val posts = postRepository.getUserPosts(user.id)
                 _uiState.update {
                     it.copy(
@@ -50,6 +50,8 @@ class MyPageViewModel(
                         errorMessage = null
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -70,7 +72,18 @@ class MyPageViewModel(
     }
 
     fun logout() {
+        if (_uiState.value.isLoading) return
+        _uiState.update { it.copy(isLoading = true, showLogoutDialog = false) }
         viewModelScope.launch {
+            // Clear provider state before Firebase sign-out switches the navigation graph.
+            try {
+                com.example.gdgoc_app.data.repository.GoogleSignInRepository()
+                    .clearSession(ServiceLocator.applicationContext)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: androidx.credentials.exceptions.ClearCredentialException) {
+                // Firebase logout must still complete if the device provider is unavailable.
+            }
             authRepository.logout()
             _uiState.update {
                 it.copy(

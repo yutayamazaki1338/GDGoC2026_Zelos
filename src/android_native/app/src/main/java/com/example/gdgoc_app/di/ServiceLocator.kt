@@ -18,6 +18,9 @@ import com.example.gdgoc_app.data.repository.UserRepository
  */
 object ServiceLocator {
 
+    lateinit var applicationContext: android.content.Context
+        private set
+
     lateinit var config: AppConfig
         private set
 
@@ -33,7 +36,8 @@ object ServiceLocator {
     var apiClient: ApiClient? = null
         private set
 
-    fun init(appConfig: AppConfig) {
+    fun init(appConfig: AppConfig, context: android.content.Context) {
+        applicationContext = context.applicationContext
         config = appConfig
         authRepository = AuthRepository()
 
@@ -42,7 +46,7 @@ object ServiceLocator {
             userRepository = MockUserRepository()
             apiClient = null
         } else {
-            val client = ApiClient(baseUrl = config.apiBaseUrl)
+            val client = ApiClient(baseUrl = config.apiBaseUrl, tokenProvider = { authRepository.getIdToken() })
             apiClient = client
             postRepository = ApiPostRepository(client)
             userRepository = ApiUserRepository(client)

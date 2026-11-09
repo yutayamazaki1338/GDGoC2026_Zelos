@@ -20,6 +20,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,30 +50,18 @@ fun NavGraph() {
         return
     }
 
-    val navController = rememberNavController()
-
-    NavHost(
-        navController = navController,
-        startDestination = NavDestinations.LOGIN
-    ) {
-        composable(NavDestinations.LOGIN) {
-            LoginScreen(
-                onLoginSuccess = {
-                    navController.navigate(NavDestinations.MAIN) {
-                        popUpTo(NavDestinations.LOGIN) { inclusive = true }
-                    }
-                }
-            )
-        }
-
-        composable(NavDestinations.MAIN) {
-            MainNavigationScreen(
-                onLogout = {
-                    navController.navigate(NavDestinations.LOGIN) {
-                        popUpTo(NavDestinations.MAIN) { inclusive = true }
-                    }
-                }
-            )
+    val user by ServiceLocator.authRepository.currentUser.collectAsState()
+    // Recreate navigation on account changes so protected screens cannot remain in the back stack.
+    key(user?.id) {
+        val navController = rememberNavController()
+        NavHost(
+            navController = navController,
+            startDestination = if (user == null) NavDestinations.LOGIN else NavDestinations.MAIN
+        ) {
+            composable(NavDestinations.LOGIN) { LoginScreen() }
+            composable(NavDestinations.MAIN) {
+                MainNavigationScreen(onLogout = { /* Auth state switches the graph. */ })
+            }
         }
     }
 }
@@ -104,7 +95,7 @@ private fun ConfigErrorScreen(errorMessage: String) {
 
             Text(
                 text = "設定ファイルのエラー",
-                style = MaterialTheme.textTheme.titleLarge,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
 
@@ -119,7 +110,7 @@ private fun ConfigErrorScreen(errorMessage: String) {
             ) {
                 Text(
                     text = errorMessage,
-                    style = MaterialTheme.textTheme.bodyMedium,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
             }

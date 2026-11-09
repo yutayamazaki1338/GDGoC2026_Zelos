@@ -17,7 +17,7 @@ class ApiPostRepository(
     }
 
     override suspend fun getUserPosts(userId: String): List<Post> {
-        val response = apiClient.get("/users/me/posts", PostsResponse::class.java)
-        return response.posts.sortedByDescending { it.createdAt }
+        // Until Django verifies Firebase tokens, derive this list from the public endpoint.
+        return getPosts().filter { it.userId == userId }
     }
 }

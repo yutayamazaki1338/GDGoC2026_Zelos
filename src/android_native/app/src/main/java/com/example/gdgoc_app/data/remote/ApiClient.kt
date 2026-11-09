@@ -30,23 +30,13 @@ class ApiClient(
         .readTimeout(10, TimeUnit.SECONDS)
         .writeTimeout(10, TimeUnit.SECONDS)
         .build(),
-    private val gson: Gson = Gson()
+    private val gson: Gson = Gson(),
+    private val tokenProvider: (suspend () -> String)? = null
 ) {
-    @Volatile
-    private var idToken: String? = null
-
-    /**
-     * 将来Firebase Authentication導入後に取得したIDトークンを設定します。
-     * Authorization: Bearer <token> として各リクエストに付与されます。
-     */
-    fun setAuthToken(token: String?) {
-        this.idToken = token
-    }
-
     /**
      * 指定されたエンドポイントへGETリクエストを送信し、型 [T] にデシリアライズして返します。
      */
-    suspend fun <T> get(endpoint: String, responseClass: Class<T>): T = withContext(Dispatchers.IO) {
+    suspend fun <T> get(endpoint: String, responseClass: Class<T>, authenticated: Boolean = false): T = withContext(Dispatchers.IO) {
         if (baseUrl.trim().isEmpty()) {
             throw ApiException("Cloud Run (Django) のURLが設定されていません。assets/config/app_config.json を確認してください。")
         }
@@ -60,10 +50,10 @@ class ApiClient(
             .addHeader("Accept", "application/json")
             .addHeader("Content-Type", "application/json; charset=utf-8")
 
-        idToken?.let { token ->
-            if (token.isNotEmpty()) {
-                requestBuilder.addHeader("Authorization", "Bearer $token")
-            }
+        // Public endpoints stay public. Future protected calls explicitly opt in.
+        if (authenticated) {
+            val token = tokenProvider?.invoke() ?: throw ApiException("ログインが必要です。")
+            requestBuilder.addHeader("Authorization", "Bearer $token")
         }
 
         val request = requestBuilder.build()

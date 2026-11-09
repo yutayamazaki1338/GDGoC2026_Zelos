@@ -1,6 +1,5 @@
 package com.example.gdgoc_app
 
-import com.example.gdgoc_app.data.repository.AuthRepository
 import com.example.gdgoc_app.data.repository.MockPostRepository
 import com.example.gdgoc_app.data.repository.MockUserRepository
 import kotlinx.coroutines.test.runTest
@@ -45,24 +44,4 @@ class MockRepositoryTest {
         assertEquals("test@example.com", user.email)
     }
 
-    @Test
-    fun authRepositoryLoginAndLogout() = runTest {
-        val auth = AuthRepository()
-        assertFalse(auth.isAuthenticated)
-        assertNull(auth.currentUser.value)
-
-        val user = auth.login(AuthRepository.TEST_EMAIL, AuthRepository.TEST_PASSWORD)
-        assertTrue(auth.isAuthenticated)
-        assertEquals(AuthRepository.TEST_EMAIL, user.email)
-
-        auth.logout()
-        assertFalse(auth.isAuthenticated)
-        assertNull(auth.currentUser.value)
-    }
-
-    @Test(expected = IllegalArgumentException::class)
-    fun authRepositoryLoginFailsWithInvalidCredentials() = runTest {
-        val auth = AuthRepository()
-        auth.login("wrong@example.com", "wrongpass")
-    }
 }

@@ -8,24 +8,24 @@ def health(request):
     return JsonResponse({"status": "ok"})
 
 
-def posts(request):
-    """Firestoreから投稿一覧を取得"""
+@require_firebase_auth
+def my_posts(request):
+    """ログインしたユーザーの投稿を取得"""
 
-    if request.method != "GET":
-        return JsonResponse(
-            {"error": "Method not allowed"},
-            status=405
-        )
+    uid = request.firebase_user["uid"]
 
     db = firestore.Client()
 
-    documents = db.collection("posts").limit(20).stream()
+    documents = (
+        db.collection("posts")
+        .where("userId", "==", uid)
+        .stream()
+    )
 
     results = []
 
     for doc in documents:
         data = doc.to_dict()
-
         created_at = data.get("createdAt")
 
         results.append({
@@ -46,3 +46,4 @@ def posts(request):
     )
 
     return JsonResponse({"posts": results})
+

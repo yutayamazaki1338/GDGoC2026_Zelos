@@ -77,13 +77,13 @@ fun PostCard(
                 Column {
                     Text(
                         text = post.userName,
-                        style = MaterialTheme.textTheme.titleMedium,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = post.formattedDate,
-                        style = MaterialTheme.textTheme.bodySmall,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -94,7 +94,7 @@ fun PostCard(
             // 本文
             Text(
                 text = post.content,
-                style = MaterialTheme.textTheme.bodyLarge,
+                style = MaterialTheme.typography.bodyLarge,
                 lineHeight = 22.sp
             )
 
@@ -113,7 +113,7 @@ fun PostCard(
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = "${post.likeCount}",
-                    style = MaterialTheme.textTheme.bodyMedium,
+                    style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

@@ -1,5 +1,9 @@
 plugins {
     id("com.android.application")
+    id("org.jetbrains.kotlin.plugin.compose")
+
+    // Firebaseに関係するプラグインの挿入
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -7,7 +11,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.gdgoc_app"
+        applicationId = "jp.mirailog.ap"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
@@ -50,6 +54,14 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     implementation("androidx.activity:activity-compose:1.8.2")
+    // Firebase Bomのインポート
+    implementation(platform("com.google.firebase:firebase-bom:35.1.0"))
+    // Firebase Authentication（ログイン認証）
+    implementation("com.google.firebase:firebase-auth")
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
     // Jetpack Compose & Material 3
     val composeBom = platform("androidx.compose:compose-bom:2024.02.00")
@@ -69,6 +81,7 @@ dependencies {
 
     // テスト
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.mockito:mockito-core:5.24.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
 
     debugImplementation("androidx.compose.ui:ui-tooling")

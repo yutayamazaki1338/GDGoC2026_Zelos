@@ -90,7 +90,7 @@ fun MyPageScreen(
             TopAppBar(
                 title = { Text(text = "マイページ", fontWeight = FontWeight.Bold) },
                 actions = {
-                    IconButton(onClick = { viewModel.showLogoutDialog() }) {
+                    IconButton(onClick = { viewModel.showLogoutDialog() }, enabled = !uiState.isLoading) {
                         Icon(
                             imageVector = Icons.Outlined.ExitToApp,
                             contentDescription = "ログアウト"
@@ -161,7 +161,7 @@ fun MyPageScreen(
 
                                     Text(
                                         text = user.name,
-                                        style = MaterialTheme.textTheme.titleLarge,
+                                        style = MaterialTheme.typography.titleLarge,
                                         fontWeight = FontWeight.Bold
                                     )
 
@@ -169,7 +169,7 @@ fun MyPageScreen(
 
                                     Text(
                                         text = user.email,
-                                        style = MaterialTheme.textTheme.bodyMedium,
+                                        style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
 
@@ -177,14 +177,14 @@ fun MyPageScreen(
 
                                     Text(
                                         text = user.bio,
-                                        style = MaterialTheme.textTheme.bodyMedium,
+                                        style = MaterialTheme.typography.bodyMedium,
                                         textAlign = TextAlign.Center,
                                         lineHeight = 20.sp
                                     )
 
                                     Spacer(modifier = Modifier.height(16.dp))
 
-                                    OutlinedButton(onClick = { viewModel.showLogoutDialog() }) {
+                                    OutlinedButton(onClick = { viewModel.showLogoutDialog() }, enabled = !uiState.isLoading) {
                                         Icon(
                                             imageVector = Icons.Outlined.ExitToApp,
                                             contentDescription = null,
@@ -208,19 +208,25 @@ fun MyPageScreen(
                             ) {
                                 Text(
                                     text = "自分の投稿 (${uiState.userPosts.size}件)",
-                                    style = MaterialTheme.textTheme.titleMedium,
+                                    style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
                                     text = "自身が作成した投稿のみ",
-                                    style = MaterialTheme.textTheme.bodySmall,
+                                    style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
 
+                        if (uiState.errorMessage != null) {
+                            item {
+                                Text("投稿を取得できませんでした。", modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.error)
+                                TextButton(onClick = { viewModel.loadData() }) { Text("再読み込み") }
+                            }
+                        }
                         // 投稿カードまたは0件表示
-                        if (uiState.userPosts.isEmpty()) {
+                        if (uiState.userPosts.isEmpty() && uiState.errorMessage == null) {
                             item {
                                 Column(
                                     modifier = Modifier
@@ -237,7 +243,7 @@ fun MyPageScreen(
                                     Spacer(modifier = Modifier.height(12.dp))
                                     Text(
                                         text = "あなたの投稿はまだありません",
-                                        style = MaterialTheme.textTheme.bodyMedium,
+                                        style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }

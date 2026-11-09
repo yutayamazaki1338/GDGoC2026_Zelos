@@ -49,7 +49,7 @@ fun ErrorView(
 
         Text(
             text = "データの取得に失敗しました",
-            style = MaterialTheme.textTheme.titleMedium,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
@@ -58,7 +58,7 @@ fun ErrorView(
 
         Text(
             text = message,
-            style = MaterialTheme.textTheme.bodyMedium,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )

@@ -14,3 +14,9 @@ __pycache__/
 # 開発環境
 .vscode/
 .idea/
+
+# Android
+src/android_native/.gradle/
+src/android_native/build/
+src/android_native/app/build/
+src/android_native/local.properties

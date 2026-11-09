@@ -9,6 +9,6 @@ class GdGocApp : Application() {
     override fun onCreate() {
         super.onCreate()
         val config = AppConfig.loadFromAssets(this)
-        ServiceLocator.init(config)
+        ServiceLocator.init(config, this)
     }
 }
