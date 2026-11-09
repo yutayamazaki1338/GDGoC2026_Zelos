@@ -4,6 +4,7 @@ from google.cloud import firestore
 
 from .authentication import require_firebase_auth
 
+
 def health(request):
     """Djangoが起動しているか確認"""
     return JsonResponse({"status": "ok"})

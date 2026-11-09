@@ -190,7 +190,6 @@ def submit_diagnosis(request):
         diagnosis_data = {
             "schemaVersion": DIAGNOSIS_SCHEMA_VERSION,
             "questionSetVersion": QUESTION_SET_VERSION,
-            "answers": answers,
             "answerHash": answer_hash,
             "styleAxisRawTotals": result["styleAxisRawTotals"],
             "styleAxisScores": result["styleAxisScores"],
@@ -212,24 +211,18 @@ def submit_diagnosis(request):
 
         transaction.create(diagnosis_ref, diagnosis_data)
 
-        if not profile.exists:
-            transaction.set(
-                profile_ref,
-                {
-                    **profile_defaults(request.firebase_user),
-                    "latestDiagnosis": latest_diagnosis,
-                    "diagnosisOnboarding": "completed",
-                },
-            )
-        else:
+        # 既存プロフィールがある場合だけ最新診断を反映する
+        if profile.exists:
             transaction.set(
                 profile_ref,
                 {
                     "latestDiagnosis": latest_diagnosis,
-                    "diagnosisOnboarding": "completed",
                 },
                 merge=True,
             )
+
+        # 新規ユーザーのプロフィールはここでは作成しない
+        # 診断結果だけをサブコレクションに保存する
 
         return "created"
 
@@ -260,37 +253,56 @@ def submit_diagnosis(request):
         logger.exception("Failed to save diagnosis")
         return api_error("Diagnosis storage failed", status=500)
 
-
 @require_GET
 @require_firebase_auth
 def get_latest_diagnosis(request):
-    """GET /diagnoses/latest"""
+    """GET /diagnoses/latest
+
+    プロフィール未作成でも最新の診断結果を取得する。
+    """
+
     uid = request.firebase_user["uid"]
     db = get_firestore()
 
     profile_ref = db.collection("users").document(uid)
+
+    # 既存ユーザーのlatestDiagnosisがあれば優先する
     profile = profile_ref.get()
 
-    if not profile.exists:
-        return api_error("Diagnosis not found", 404)
+    if profile.exists:
+        latest = (profile.to_dict() or {}).get("latestDiagnosis")
 
-    latest = (profile.to_dict() or {}).get("latestDiagnosis")
+        if isinstance(latest, dict) and latest.get("id"):
+            snapshot = (
+                profile_ref.collection("diagnoses")
+                .document(latest["id"])
+                .get()
+            )
 
-    if not isinstance(latest, dict) or not latest.get("id"):
-        return api_error("Diagnosis not found", 404)
+            if snapshot.exists:
+                return JsonResponse(
+                    diagnosis_to_response(snapshot),
+                    json_dumps_params={"ensure_ascii": False},
+                )
 
-    snapshot = (
+    # プロフィールがない場合、または最新結果の参照がない場合
+    # 診断履歴からcompletedAtが最も新しい1件を取得する
+    query = (
         profile_ref.collection("diagnoses")
-        .document(latest["id"])
-        .get()
+        .order_by(
+            "completedAt",
+            direction=firestore.Query.DESCENDING,
+        )
+        .limit(1)
     )
 
-    if not snapshot.exists:
-        logger.error("Latest diagnosis reference is missing")
+    snapshots = list(query.stream())
+
+    if not snapshots:
         return api_error("Diagnosis not found", 404)
 
     return JsonResponse(
-        diagnosis_to_response(snapshot),
+        diagnosis_to_response(snapshots[0]),
         json_dumps_params={"ensure_ascii": False},
     )
 
@@ -360,61 +372,11 @@ def get_diagnosis_by_id(request, diagnosis_id):
         json_dumps_params={"ensure_ascii": False},
     )
 
-
 @csrf_exempt
 @require_POST
 @require_firebase_auth
 def skip_initial_diagnosis(request):
-    """
-    POST /users/me/diagnosis-skip
-
-    初回診断をスキップし、必要ならプロフィールを作る。
-    """
-
-    uid = request.firebase_user["uid"]
-    db = get_firestore()
-    profile_ref = db.collection("users").document(uid)
-
-    @google_firestore.transactional
-    def save_skip(transaction):
-        profile = profile_ref.get(transaction=transaction)
-
-        if not profile.exists:
-            transaction.set(
-                profile_ref,
-                {
-                    **profile_defaults(request.firebase_user),
-                    "diagnosisOnboarding": "skipped",
-                },
-            )
-            return "skipped"
-
-        data = profile.to_dict() or {}
-
-        if data.get("latestDiagnosis"):
-            return "completed"
-
-        # 既存ユーザーの状態を勝手に書き換えない
-        if "diagnosisOnboarding" not in data:
-            return "existing"
-
-        if data["diagnosisOnboarding"] == "skipped":
-            return "skipped"
-
-        transaction.set(
-            profile_ref,
-            {"diagnosisOnboarding": "skipped"},
-            merge=True,
-        )
-
-        return "skipped"
-
-    try:
-        state = save_skip(db.transaction())
-    except Exception:
-        logger.exception("Failed to skip initial diagnosis")
-        return api_error("Profile initialization failed", 500)
-
-    return JsonResponse({
-        "diagnosisOnboarding": state,
-    })
+    return JsonResponse(
+        {"error": "Diagnosis is required"},
+        status=403,
+    )

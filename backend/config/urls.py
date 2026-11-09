@@ -25,7 +25,7 @@ from api.profile_views import (
     update_my_profile,
 )
 from django.views.decorators.csrf import csrf_exempt
-
+from api.registration_views import get_registration_state
 
 
 #診断関係のものをインポート
@@ -60,8 +60,9 @@ urlpatterns = [
     path("posts", gets_all_posts),
     path("users/me", my_profile_route), #上の判別関数に飛んで、通信プロトコルの種類を分別する
     path("users/me/initialize", initialize_profile),
+    path("users/me/registration", get_registration_state),
     path("users/me/posts", my_posts),
-    
+
     #ライフデザイン診断用
     path("diagnoses/questions", get_diagnosis_questions),
     path("diagnoses", submit_diagnosis),
