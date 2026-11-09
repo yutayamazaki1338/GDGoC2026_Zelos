@@ -2,29 +2,73 @@
 import logging
 from functools import wraps
 
-from django.conf import settings
 from django.http import JsonResponse
 from google.cloud import firestore
-from google.api_core.exceptions import GoogleAPICallError
 
 logger = logging.getLogger(__name__)
 
 
+def get_registration_state(uid, db):
+    """
+    登録状態を3種類で返す。
+
+    PendingDiagnosis: 診断未完了
+    PendingUsername: 診断済み、名前未登録
+    Completed: 登録完了
+    """
+
+    profile_ref = db.collection("users").document(uid)
+    profile_snapshot = profile_ref.get()
+
+    profile = (
+        profile_snapshot.to_dict() or {}
+        if profile_snapshot.exists
+        else {}
+    )
+
+    # 登録完了済みなら、初回診断の実在を確認
+    if profile.get("registrationState") == "Completed":
+        diagnosis_id = profile.get("initialDiagnosisId")
+
+        if not isinstance(diagnosis_id, str) or not diagnosis_id:
+            raise ValueError("Initial diagnosis ID missing")
+
+        diagnosis_snapshot = (
+            profile_ref.collection("diagnoses")
+            .document(diagnosis_id)
+            .get()
+        )
+
+        if not diagnosis_snapshot.exists:
+            raise ValueError("Initial diagnosis not found")
+
+        return "Completed", diagnosis_id
+
+    # 登録未完了なら、保存済み診断を探す
+    diagnoses = list(
+        profile_ref.collection("diagnoses")
+        .order_by(
+            "completedAt",
+            direction=firestore.Query.DESCENDING,
+        )
+        .limit(1)
+        .stream()
+    )
+
+    if diagnoses:
+        return "PendingUsername", diagnoses[0].id
+
+    return "PendingDiagnosis", None
+
+
 def require_registration_completed(view_func):
     """
-    Firebase認証後、通常APIの利用資格を確認する。
-
-    このデコレータを使う関数には、
-    先に @require_firebase_auth を適用すること。
+    Firebase認証済みユーザーについて、
+    登録完了を確認してから通常APIを実行する。
     """
 
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
-
-        # 既存ユーザー移行が完了するまでは強制しない
-        if not settings.REGISTRATION_GATE_ENABLED:
-            return view_func(request, *args, **kwargs)
-
         user = getattr(request, "firebase_user", None)
 
         if not user or not user.get("uid"):
@@ -33,99 +77,34 @@ def require_registration_completed(view_func):
                 status=401,
             )
 
-        uid = user["uid"]
-
         try:
             db = firestore.Client()
 
-            policy_ref = (
-                db.collection("registrationPolicies")
-                .document(uid)
+            state, _ = get_registration_state(
+                user["uid"],
+                db,
             )
 
-            profile_ref = (
-                db.collection("users")
-                .document(uid)
+        except Exception:
+            logger.exception(
+                "Registration authorization failed"
             )
 
-            policy_snapshot = policy_ref.get()
-
-            if not policy_snapshot.exists:
-                return JsonResponse(
-                    {"error": "Registration state unavailable"},
-                    status=403,
-                )
-
-            policy = policy_snapshot.to_dict() or {}
-            state = policy.get("registrationState")
-
-            if state == "Existing":
-                if policy.get("diagnosisRequired") is not False:
-                    return JsonResponse(
-                        {"error": "Invalid registration policy"},
-                        status=403,
-                    )
-
-                if not profile_ref.get().exists:
-                    return JsonResponse(
-                        {"error": "Profile not found"},
-                        status=403,
-                    )
-
-                return view_func(request, *args, **kwargs)
-
-            if state != "Completed":
-                return JsonResponse(
-                    {
-                        "error": "Registration incomplete",
-                        "registrationState": state,
-                    },
-                    status=403,
-                )
-
-            if policy.get("diagnosisRequired") is not True:
-                return JsonResponse(
-                    {"error": "Invalid registration policy"},
-                    status=403,
-                )
-
-            diagnosis_id = policy.get("verifiedDiagnosisId")
-
-            if not diagnosis_id:
-                return JsonResponse(
-                    {"error": "Verified diagnosis missing"},
-                    status=403,
-                )
-
-            profile_snapshot = profile_ref.get()
-
-            if not profile_snapshot.exists:
-                return JsonResponse(
-                    {"error": "Profile not found"},
-                    status=403,
-                )
-
-            
-
-            diagnosis_snapshot = (
-                profile_ref.collection("diagnoses")
-                .document(diagnosis_id)
-                .get()
-            )
-
-            if not diagnosis_snapshot.exists:
-                return JsonResponse(
-                    {"error": "Verified diagnosis not found"},
-                    status=403,
-                )
-
-            return view_func(request, *args, **kwargs)
-
-        except GoogleAPICallError:
-            logger.exception("Registration authorization DB error")
             return JsonResponse(
                 {"error": "Registration check unavailable"},
                 status=503,
             )
 
+        if state != "Completed":
+            return JsonResponse(
+                {
+                    "error": "Registration incomplete",
+                    "registrationState": state,
+                },
+                status=403,
+            )
+
+        return view_func(request, *args, **kwargs)
+
     return wrapper
+

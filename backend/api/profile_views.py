@@ -8,7 +8,8 @@ from django.views.decorators.csrf import csrf_exempt
 from .authentication import require_firebase_auth
 import json
 from .registration_permissions import require_registration_completed
-
+from .registration_permissions import get_registration_state
+from .diagnosis_questions import TYPE_MAP
 
 def get_firestore():
     """Firestoreクライアントを取得する"""
@@ -48,19 +49,16 @@ def profile_response(uid, user, data):
         "diagnosisOnboarding": data.get("diagnosisOnboarding"),
     }
 
-
 @csrf_exempt
 @require_http_methods(["POST"])
 @require_firebase_auth
+
 def initialize_profile(request):
     """
     POST /users/me/initialize
 
-    新規ユーザー:
-        診断結果保存 → ユーザー名入力 → プロフィール作成
-
-    既存ユーザー:
-        既存プロフィールをそのまま返す
+    必須診断の保存後にだけ、
+    ユーザー名を受け取ってプロフィールを作成する。
     """
 
     user = request.firebase_user
@@ -70,45 +68,11 @@ def initialize_profile(request):
     if verification_error is not None:
         return verification_error
 
-    db = get_firestore()
-
-    profile_ref = db.collection("users").document(uid)
-    policy_ref = (
-        db.collection("registrationPolicies")
-        .document(uid)
-    )
-
-    # 診断保存済みか調べる。
-    # ここではまだプロフィールを作成しない。
+    # リクエストの読み取り
     try:
-        latest_diagnoses = list(
-            profile_ref.collection("diagnoses")
-            .order_by(
-                "completedAt",
-                direction=firestore.Query.DESCENDING,
-            )
-            .limit(1)
-            .stream()
-        )
-    except GoogleAPICallError:
-        return JsonResponse(
-            {"error": "Database unavailable"},
-            status=503,
-        )
-
-    latest_diagnosis_id = (
-        latest_diagnoses[0].id
-        if latest_diagnoses
-        else None
-    )
-
-    # 新規ユーザー用の名前はリクエストJSONから受け取る
-    try:
-        payload = (
-            json.loads(request.body.decode("utf-8"))
-            if request.body
-            else {}
-        )
+        payload = json.loads(
+            request.body.decode("utf-8")
+        ) if request.body else {}
     except (ValueError, UnicodeDecodeError):
         return JsonResponse(
             {"error": "Invalid JSON"},
@@ -121,174 +85,139 @@ def initialize_profile(request):
             status=400,
         )
 
-    requested_name = payload.get("name")
+    db = get_firestore()
+    profile_ref = db.collection("users").document(uid)
 
-    @firestore.transactional
-    def create_profile(transaction):
-        # Firestoreの読み取りをすべて書き込みより前に行う
-        policy_snapshot = policy_ref.get(
-            transaction=transaction
+    try:
+        state, diagnosis_id = get_registration_state(
+            uid,
+            db,
         )
 
-        profile_snapshot = profile_ref.get(
-            transaction=transaction
-        )
-
-        if not policy_snapshot.exists:
-            return "policy_missing"
-
-        policy = policy_snapshot.to_dict() or {}
-        state = policy.get("registrationState")
-
-        # 移行済みの既存ユーザー
-        if state == "Existing":
-            if policy.get("diagnosisRequired") is not False:
-                return "invalid_policy"
-
-            if not profile_snapshot.exists:
-                return "profile_missing"
-
-            return "existing"
-
-        # 新規登録が完了している場合
+        # 登録済みユーザーによる再送
         if state == "Completed":
-            if not profile_snapshot.exists:
-                return "profile_missing"
+            snapshot = profile_ref.get()
 
-            diagnosis_id = policy.get("verifiedDiagnosisId")
-
-            if not diagnosis_id:
-                return "invalid_policy"
-
-            
-
-            saved_diagnosis = (
-                profile_ref.collection("diagnoses")
-                .document(diagnosis_id)
-                .get(transaction=transaction)
+            return JsonResponse(
+                profile_response(
+                    uid,
+                    user,
+                    snapshot.to_dict() or {},
+                ),
+                status=200,
             )
 
-            if not saved_diagnosis.exists:
-                return "diagnosis_missing"
+        # 診断を完了していなければ登録不可
+        if state != "PendingUsername" or not diagnosis_id:
+            return JsonResponse(
+                {"error": "Diagnosis not completed"},
+                status=409,
+            )
 
-            return "existing"
+        requested_name = payload.get("name")
 
-        # 新規ユーザーの登録途中
-        if state not in ("PendingDiagnosis", "PendingUsername"):
-            return "invalid_policy"
-
-        if policy.get("diagnosisRequired") is not True:
-            return "invalid_policy"
-
-        # 新しい必須登録フローでは、
-        # すでにプロフィールがある状態を許さない
-        if profile_snapshot.exists:
-            return "unexpected_profile"
-
-        # 診断未完了のまま登録させない
-        if not latest_diagnosis_id:
-            return "diagnosis_missing"
-
-        diagnosis_ref = (
-            profile_ref.collection("diagnoses")
-            .document(latest_diagnosis_id)
-        )
-
-        diagnosis_snapshot = diagnosis_ref.get(
-            transaction=transaction
-        )
-
-        if not diagnosis_snapshot.exists:
-            return "diagnosis_missing"
-
-        diagnosis = diagnosis_snapshot.to_dict() or {}
-
-        if not diagnosis.get("typeCode"):
-            return "diagnosis_invalid"
-
-        # ユーザー名の形式を検証
         if not isinstance(requested_name, str):
-            return "invalid_name"
+            return JsonResponse(
+                {"error": "Username is required"},
+                status=400,
+            )
 
         name = requested_name.strip()
 
-        if not 1 <= len(name) <= 30:
-            return "invalid_name"
+        if (
+            not 1 <= len(name) <= 30
+            or any(
+                ord(ch) < 32 or ord(ch) == 127
+                for ch in name
+            )
+        ):
+            return JsonResponse(
+                {"error": "Invalid username"},
+                status=400,
+            )
 
-        if any(ord(ch) < 32 or ord(ch) == 127 for ch in name):
-            return "invalid_name"
-
-        # 保存するのは診断結果の概要
-        from .diagnosis_questions import TYPE_MAP
-
-        type_code = diagnosis["typeCode"]
-
-        if type_code not in TYPE_MAP:
-            return "diagnosis_invalid"
-
-        latest_diagnosis = {
-            "id": diagnosis_snapshot.id,
-            "typeCode": type_code,
-            "description": TYPE_MAP[type_code]["description"],
-        }
-
-        # プロフィール作成
-        transaction.create(
-            profile_ref,
-            {
-                "name": name,
-                "bio": "",
-                "avatarUrl": "",
-                "createdAt": firestore.SERVER_TIMESTAMP,
-                "latestDiagnosis": latest_diagnosis,
-                "diagnosisOnboarding": "completed",
-            },
+        diagnosis_ref = (
+            profile_ref.collection("diagnoses")
+            .document(diagnosis_id)
         )
 
-        # 登録ポリシーを同時に完了状態へ変更
-        transaction.update(
-            policy_ref,
-            {
-                "registrationState": "Completed",
-                "verifiedDiagnosisId": diagnosis_snapshot.id,
-                "completedAt": firestore.SERVER_TIMESTAMP,
-            },
-        )
+        @firestore.transactional
+        def create_profile(transaction):
+            # Firestoreの読み取りを先に実行
+            profile_snapshot = profile_ref.get(
+                transaction=transaction
+            )
 
-        return "created"
+            diagnosis_snapshot = diagnosis_ref.get(
+                transaction=transaction
+            )
 
-    try:
+            if not diagnosis_snapshot.exists:
+                return "diagnosis_missing"
+
+            # 再送で作成済みの場合
+            if profile_snapshot.exists:
+                existing = profile_snapshot.to_dict() or {}
+
+                if existing.get("registrationState") == "Completed":
+                    return "existing"
+
+                # 不完全な旧プロフィールを自動的に
+                # 登録完了扱いしない
+                return "unexpected_profile"
+
+            diagnosis = diagnosis_snapshot.to_dict() or {}
+            type_code = diagnosis.get("typeCode")
+
+            if type_code not in TYPE_MAP:
+                return "diagnosis_invalid"
+
+            latest_diagnosis = {
+                "id": diagnosis_snapshot.id,
+                "typeCode": type_code,
+                "description": TYPE_MAP[type_code]["description"],
+            }
+
+            transaction.create(
+                profile_ref,
+                {
+                    "name": name,
+                    "bio": "",
+                    "avatarUrl": "",
+                    "createdAt": firestore.SERVER_TIMESTAMP,
+                    "latestDiagnosis": latest_diagnosis,
+                    "initialDiagnosisId": diagnosis_snapshot.id,
+                    "registrationState": "Completed",
+                    "diagnosisOnboarding": "completed",
+                    "registrationCompletedAt": firestore.SERVER_TIMESTAMP,
+                },
+            )
+
+            return "created"
+
         result = create_profile(db.transaction())
 
-        errors = {
-            "policy_missing": (
-                "Registration policy not initialized", 409
-            ),
-            "invalid_policy": (
-                "Invalid registration policy", 409
-            ),
-            "profile_missing": (
-                "Profile not found", 409
-            ),
-            "diagnosis_missing": (
-                "Diagnosis not completed", 409
-            ),
-            "diagnosis_invalid": (
-                "Invalid diagnosis result", 409
-            ),
-            "unexpected_profile": (
-                "Profile exists before registration completion", 409
-            ),
-            "invalid_name": (
-                "Username must contain 1 to 30 valid characters", 400
-            ),
-        }
-
-        if result in errors:
-            message, status_code = errors[result]
+        if result == "diagnosis_missing":
             return JsonResponse(
-                {"error": message},
-                status=status_code,
+                {"error": "Diagnosis not found"},
+                status=409,
+            )
+
+        if result == "diagnosis_invalid":
+            return JsonResponse(
+                {"error": "Invalid diagnosis result"},
+                status=409,
+            )
+
+        if result == "unexpected_profile":
+            return JsonResponse(
+                {
+                    "error": (
+                        "Incomplete profile already exists. "
+                        "Reset the test account before retrying."
+                    )
+                },
+                status=409,
             )
 
         snapshot = profile_ref.get()
@@ -300,7 +229,11 @@ def initialize_profile(request):
             )
 
         return JsonResponse(
-            profile_response(uid, user, snapshot.to_dict()),
+            profile_response(
+                uid,
+                user,
+                snapshot.to_dict() or {},
+            ),
             status=201 if result == "created" else 200,
         )
 
@@ -309,14 +242,16 @@ def initialize_profile(request):
             {"error": "Database unavailable"},
             status=503,
         )
+
     except Exception:
         import logging
         logging.getLogger(__name__).exception(
             "Profile initialization failed"
         )
+
         return JsonResponse(
             {"error": "Profile initialization failed"},
-            status=500,
+            status=503,
         )
 
 

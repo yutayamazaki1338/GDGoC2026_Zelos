@@ -131,9 +131,3 @@ MAILERS = {
     },
 }
 
-# 初回診断・プロフィール登録の必須ゲート
-# 既存ユーザーの移行が完了するまで無効
-REGISTRATION_GATE_ENABLED = (
-    os.environ.get("REGISTRATION_GATE_ENABLED", "false").lower()
-    == "true"
-)
