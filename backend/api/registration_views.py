@@ -31,9 +31,9 @@ def get_registration_state(request):
 
     try:
         state, diagnosis_id = resolve_registration_state(
-        user["uid"],
-        get_firestore(),
-    )
+            user["uid"],
+            get_firestore(),
+        )
 
         return JsonResponse({
             "registrationState": state,
