@@ -44,6 +44,8 @@ def profile_response(uid, user, data):
             created_at.isoformat()
             if created_at is not None else None
         ),
+        "latestDiagnosis": data.get("latestDiagnosis"),
+        "diagnosisOnboarding": data.get("diagnosisOnboarding"),
     }
 
 

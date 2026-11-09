@@ -26,6 +26,18 @@ from api.profile_views import (
 )
 from django.views.decorators.csrf import csrf_exempt
 
+
+
+#診断関係のものをインポート
+from api.diagnosis_views import (
+    get_diagnosis_questions,
+    submit_diagnosis,
+    get_latest_diagnosis,
+    get_diagnosis_history,
+    get_diagnosis_by_id,
+    skip_initial_diagnosis,
+)
+
 @csrf_exempt
 def my_profile_route(request):
     if request.method == "GET":
@@ -49,5 +61,15 @@ urlpatterns = [
     path("users/me", my_profile_route), #上の判別関数に飛んで、通信プロトコルの種類を分別する
     path("users/me/initialize", initialize_profile),
     path("users/me/posts", my_posts),
+    
+    #ライフデザイン診断用
+    path("diagnoses/questions", get_diagnosis_questions),
+    path("diagnoses", submit_diagnosis),
+    path("diagnoses/latest", get_latest_diagnosis),
+    path("diagnoses/history", get_diagnosis_history),
+    path("diagnoses/<str:diagnosis_id>", get_diagnosis_by_id),
+
+    # 初回診断スキップ
+    path("users/me/diagnosis-skip", skip_initial_diagnosis),
 ]
 
