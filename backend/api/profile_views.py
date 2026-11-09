@@ -6,6 +6,8 @@ from google.api_core.exceptions import AlreadyExists, GoogleAPICallError
 from django.views.decorators.csrf import csrf_exempt
 
 from .authentication import require_firebase_auth
+import json
+
 
 
 def get_firestore():
@@ -133,4 +135,95 @@ def my_profile(request):
         return JsonResponse(
             {"error": "Database unavailable"},
             status=503
+        )
+
+
+@csrf_exempt
+@require_http_methods(["PATCH"])
+@require_firebase_auth
+def update_my_profile(request):
+
+    # ① Firebase認証済みユーザーのUIDを取得
+    user = request.firebase_user
+    uid = user["uid"]
+
+    # ② メール認証状態を確認
+    verification_error = check_email_verification(user)
+    if verification_error is not None:
+        return verification_error
+
+    # ③ Androidから送信されたJSONを取得
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse(
+            {"error": "Invalid JSON"},
+            status=400,
+        )
+
+    if not isinstance(data, dict):
+        return JsonResponse(
+            {"error": "JSON object required"},
+            status=400,
+        )
+
+    # ④ 更新可能なフィールドだけを受け付ける
+    if set(data.keys()) != {"name", "bio"}:
+        return JsonResponse(
+            {"error": "Only name and bio are allowed"},
+            status=400,
+        )
+
+    name = data["name"]
+    bio = data["bio"]
+
+    # ⑤ 入力値の検証
+    if not isinstance(name, str) or not isinstance(bio, str):
+        return JsonResponse(
+            {"error": "name and bio must be strings"},
+            status=400,
+        )
+
+    name = name.strip()
+
+    if not name or len(name) > 50:
+        return JsonResponse(
+            {"error": "name must be 1 to 50 characters"},
+            status=400,
+        )
+
+    if len(bio) > 300:
+        return JsonResponse(
+            {"error": "bio must be 300 characters or fewer"},
+            status=400,
+        )
+
+    # ⑥ Firestoreの本人のドキュメントを更新
+    try:
+        db = get_firestore()
+        doc_ref = db.collection("users").document(uid)
+
+        doc_ref.update({
+            "name": name,
+            "bio": bio,
+        })
+
+        # ⑦ 更新後のプロフィールを取得
+        snapshot = doc_ref.get()
+
+        return JsonResponse(
+            profile_response(uid, user, snapshot.to_dict()),
+            status=200,
+        )
+
+    except NotFound:
+        return JsonResponse(
+            {"error": "Profile not found"},
+            status=404,
+        )
+
+    except GoogleAPICallError:
+        return JsonResponse(
+            {"error": "Database unavailable"},
+            status=503,
         )
