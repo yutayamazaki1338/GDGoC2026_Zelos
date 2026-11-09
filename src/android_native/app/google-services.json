@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "388300005245",
+    "project_id": "devfestgdgocjapan2026zelos",
+    "storage_bucket": "devfestgdgocjapan2026zelos.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:388300005245:android:855c6e5cf6c41b746a7614",
+        "android_client_info": {
+          "package_name": "jp.mirailog.ap"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "388300005245-tevdunuvdnnqhvm6mp4n9niokggr8ki1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDF_pcYDRaGQI-Uj9vTsFe4r6_Sdu8bfgI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "388300005245-tevdunuvdnnqhvm6mp4n9niokggr8ki1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
