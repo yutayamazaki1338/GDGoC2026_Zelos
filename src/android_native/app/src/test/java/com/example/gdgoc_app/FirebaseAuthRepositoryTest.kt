@@ -8,9 +8,17 @@ import com.google.firebase.auth.UserInfo
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.Before
+import org.junit.After
+import org.mockito.MockedStatic
+import android.util.Log
 import org.mockito.Mockito.*
 
 class FirebaseAuthRepositoryTest {
+    private lateinit var log: MockedStatic<Log>
+    @Before fun silenceAndroidLog() { log = mockStatic(Log::class.java) }
+    @After fun closeLogMock() { log.close() }
+
     private fun user(verified: Boolean): FirebaseUser {
         val user = mock(FirebaseUser::class.java)
         val provider = mock(UserInfo::class.java)

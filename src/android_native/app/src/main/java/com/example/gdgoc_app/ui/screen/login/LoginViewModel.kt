@@ -1,6 +1,9 @@
 package com.example.gdgoc_app.ui.screen.login
 
 import android.content.Context
+import android.util.Log
+import androidx.credentials.exceptions.GetCredentialException
+import com.google.firebase.auth.FirebaseAuthException
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gdgoc_app.data.repository.AuthRepository
@@ -74,8 +77,26 @@ class LoginViewModel(
     }
 
     fun loginWithGoogle(context: Context) = runOperation {
-        authRepository.loginWithGoogle(googleSignIn.getIdToken(context))
-        null
+        var stage = "view_model_google_credential_request"
+        try {
+            Log.d("MirailogAuth", "stage=$stage event=start")
+            val token = googleSignIn.getIdToken(context)
+            Log.d("MirailogAuth", "stage=$stage event=success")
+            stage = "view_model_firebase_google_login"
+            Log.d("MirailogAuth", "stage=$stage event=start")
+            authRepository.loginWithGoogle(token)
+            Log.d("MirailogAuth", "stage=$stage event=success authenticated=${authRepository.isAuthenticated}")
+            null
+        } catch (e: Exception) {
+            val code = when (e) {
+                is FirebaseAuthException -> e.errorCode
+                is GetCredentialException -> e.type
+                else -> "none"
+            }
+            Log.e("MirailogAuth", "stage=$stage exception=${e.javaClass.name} code=$code")
+            // Preserve the original exception and the existing runOperation handling.
+            throw e
+        }
     }
     fun resetPassword() {
         if (_uiState.value.isLoading || !validEmail()) return

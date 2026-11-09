@@ -1,5 +1,7 @@
 package com.example.gdgoc_app.ui.navigation
 
+import android.util.Log
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +35,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.gdgoc_app.di.ServiceLocator
 import com.example.gdgoc_app.ui.screen.login.LoginScreen
+import com.example.gdgoc_app.ui.screen.profile.ProfileGateScreen
+import com.example.gdgoc_app.data.repository.ProfileStatus
 import com.example.gdgoc_app.ui.screen.main.MainNavigationScreen
 
 object NavDestinations {
@@ -51,6 +55,11 @@ fun NavGraph() {
     }
 
     val user by ServiceLocator.authRepository.currentUser.collectAsState()
+    val profileState by ServiceLocator.profileSession.state.collectAsState()
+    if (user != null && (profileState.status != ProfileStatus.Ready || profileState.userId != user?.id)) {
+        ProfileGateScreen()
+        return
+    }
     // Recreate navigation on account changes so protected screens cannot remain in the back stack.
     key(user?.id) {
         val navController = rememberNavController()
@@ -58,8 +67,16 @@ fun NavGraph() {
             navController = navController,
             startDestination = if (user == null) NavDestinations.LOGIN else NavDestinations.MAIN
         ) {
-            composable(NavDestinations.LOGIN) { LoginScreen() }
+            composable(NavDestinations.LOGIN) {
+                LaunchedEffect(Unit) {
+                    Log.d("MirailogAuth", "stage=navigation event=screen_enter destination=login")
+                }
+                LoginScreen()
+            }
             composable(NavDestinations.MAIN) {
+                LaunchedEffect(Unit) {
+                    Log.d("MirailogAuth", "stage=navigation event=screen_enter destination=main")
+                }
                 MainNavigationScreen(onLogout = { /* Auth state switches the graph. */ })
             }
         }

@@ -14,6 +14,8 @@ class MockUserRepository : UserRepository {
         bio = "Kotlin + Jetpack ComposeとGoogle Cloud (Cloud Run / Django / Firestore) を連携して開発しています。エミュレーター通信を検証中。"
     )
 
+    override suspend fun initializeMyProfile(): User = getMyProfile()
+
     override suspend fun getMyProfile(): User {
         delay(200)
         return mockUser

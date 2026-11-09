@@ -5,6 +5,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
@@ -36,7 +38,14 @@ class ApiClient(
     /**
      * 指定されたエンドポイントへGETリクエストを送信し、型 [T] にデシリアライズして返します。
      */
-    suspend fun <T> get(endpoint: String, responseClass: Class<T>, authenticated: Boolean = false): T = withContext(Dispatchers.IO) {
+    suspend fun <T> get(endpoint: String, responseClass: Class<T>, authenticated: Boolean = false): T =
+        request(endpoint, responseClass, authenticated, post = false)
+
+    /** Initialization deliberately sends an empty JSON object, never a client-supplied UID. */
+    suspend fun <T> post(endpoint: String, responseClass: Class<T>, authenticated: Boolean = false): T =
+        request(endpoint, responseClass, authenticated, post = true)
+
+    private suspend fun <T> request(endpoint: String, responseClass: Class<T>, authenticated: Boolean, post: Boolean): T = withContext(Dispatchers.IO) {
         if (baseUrl.trim().isEmpty()) {
             throw ApiException("Cloud Run (Django) のURLが設定されていません。assets/config/app_config.json を確認してください。")
         }
@@ -56,6 +65,7 @@ class ApiClient(
             requestBuilder.addHeader("Authorization", "Bearer $token")
         }
 
+        if (post) requestBuilder.post("{}".toRequestBody("application/json; charset=utf-8".toMediaType()))
         val request = requestBuilder.build()
 
         try {
@@ -72,7 +82,8 @@ class ApiClient(
                 }
 
                 when (response.code) {
-                    401, 403 -> throw ApiException("認証に失敗しました。再ログインしてください。", response.code)
+                    401 -> throw ApiException("認証情報を確認できませんでした。再試行するか、ログインし直してください。", response.code)
+                    403 -> throw ApiException("プロフィールにアクセスできません。メールの確認状態と利用権限をご確認ください。", response.code)
                     404 -> throw ApiException("指定されたリソースが見つかりませんでした (404)。", response.code)
                     in 500..599 -> throw ApiException("サーバー内部エラーが発生しました (${response.code})。", response.code)
                     else -> throw ApiException("通信エラーが発生しました (ステータスコード: ${response.code})", response.code)
@@ -81,7 +92,7 @@ class ApiClient(
         } catch (e: SocketTimeoutException) {
             throw ApiException("通信がタイムアウトしました。サーバーの状態を確認してください。", cause = e)
         } catch (e: IOException) {
-            throw ApiException("ネットワークに接続できませんでした。通信環境を確認してください: ${e.message}", cause = e)
+            throw ApiException("ネットワークに接続できませんでした。通信環境を確認してください。", cause = e)
         }
     }
 }

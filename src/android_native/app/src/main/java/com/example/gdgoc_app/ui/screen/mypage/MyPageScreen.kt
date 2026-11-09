@@ -33,6 +33,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -155,6 +158,14 @@ fun MyPageScreen(
                                             fontSize = 28.sp,
                                             color = MaterialTheme.colorScheme.onPrimary
                                         )
+                                        if (user.avatarUrl.toHttpUrlOrNull() != null) {
+                                            AsyncImage(
+                                                model = user.avatarUrl,
+                                                contentDescription = "プロフィール画像",
+                                                modifier = Modifier.matchParentSize(),
+                                                contentScale = ContentScale.Crop
+                                            )
+                                        }
                                     }
 
                                     Spacer(modifier = Modifier.height(12.dp))
@@ -221,7 +232,7 @@ fun MyPageScreen(
 
                         if (uiState.errorMessage != null) {
                             item {
-                                Text("投稿を取得できませんでした。", modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.error)
+                                Text(uiState.errorMessage ?: "投稿を取得できませんでした。", modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.error)
                                 TextButton(onClick = { viewModel.loadData() }) { Text("再読み込み") }
                             }
                         }

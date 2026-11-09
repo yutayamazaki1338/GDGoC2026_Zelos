@@ -8,6 +8,7 @@ plugins {
 
 android {
     namespace = "com.example.gdgoc_app"
+    namespace = "com.example.gdgoc_app"
     compileSdk = 34
 
     defaultConfig {
@@ -77,6 +78,7 @@ dependencies {
     // HTTP通信 & JSON解析
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.google.code.gson:gson:2.10.1")
+    implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
     // テスト

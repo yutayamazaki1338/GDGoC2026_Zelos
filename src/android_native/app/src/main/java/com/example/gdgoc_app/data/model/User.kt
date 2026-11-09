@@ -18,5 +18,14 @@ data class User(
     val email: String = "",
 
     @SerializedName("bio")
-    val bio: String = ""
+    val bio: String = "",
+
+    @SerializedName("emailVerified")
+    val emailVerified: Boolean = false,
+
+    @SerializedName("avatarUrl")
+    val avatarUrl: String = "",
+
+    @SerializedName("createdAt")
+    val createdAt: String = ""
 )

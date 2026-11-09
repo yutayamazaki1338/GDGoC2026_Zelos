@@ -6,15 +6,20 @@ import com.example.gdgoc_app.data.repository.ApiPostRepository
 import com.example.gdgoc_app.data.repository.ApiUserRepository
 import com.example.gdgoc_app.data.repository.AuthRepository
 import com.example.gdgoc_app.data.repository.MockPostRepository
-import com.example.gdgoc_app.data.repository.MockUserRepository
+import com.example.gdgoc_app.data.repository.UserProfileSession
+import com.example.gdgoc_app.data.repository.GoogleSignInRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import com.example.gdgoc_app.data.repository.PostRepository
 import com.example.gdgoc_app.data.repository.UserRepository
 
 /**
  * 依存性注入（DI）を管理するシングルトンオブジェクト。
  *
- * [AppConfig.useMockData] のフラグに応じて、
- * モックリポジトリと実APIリポジトリを透過的に切り替えます。
+ * [AppConfig.useMockData] は投稿データだけに適用します。
+ * 認証はFirebase、プロフィールはDjangoの実サービスを使用します。
  */
 object ServiceLocator {
 
@@ -33,6 +38,11 @@ object ServiceLocator {
     lateinit var userRepository: UserRepository
         private set
 
+    lateinit var profileSession: UserProfileSession
+        private set
+
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
     var apiClient: ApiClient? = null
         private set
 
@@ -41,15 +51,22 @@ object ServiceLocator {
         config = appConfig
         authRepository = AuthRepository()
 
-        if (config.useMockData) {
-            postRepository = MockPostRepository()
-            userRepository = MockUserRepository()
-            apiClient = null
-        } else {
-            val client = ApiClient(baseUrl = config.apiBaseUrl, tokenProvider = { authRepository.getIdToken() })
-            apiClient = client
-            postRepository = ApiPostRepository(client)
-            userRepository = ApiUserRepository(client)
+        // Only posts use mock mode. Firebase auth and Django profiles always use real services.
+        val client = ApiClient(baseUrl = config.apiBaseUrl, tokenProvider = { authRepository.getIdToken() })
+        apiClient = client
+        userRepository = ApiUserRepository(client)
+        postRepository = if (config.useMockData) MockPostRepository() else ApiPostRepository(client)
+        profileSession = UserProfileSession(authRepository.currentUser, userRepository, applicationScope)
+    }
+
+    suspend fun logout() {
+        try {
+            GoogleSignInRepository().clearSession(applicationContext)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: androidx.credentials.exceptions.ClearCredentialException) {
+            // Device provider cleanup must not prevent Firebase logout.
         }
+        authRepository.logout()
     }
 }
