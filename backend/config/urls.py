@@ -17,7 +17,7 @@ Including another URLconf
 
 from django.urls import path
 from api.views import health, posts
-
+from api.profile_views import initialize_profile, my_profile
 
 from django.urls import path
 from api.views import (
@@ -32,6 +32,7 @@ urlpatterns = [
     path("health", health),
     path("posts", posts),
     path("users/me", my_profile),
+    path("users/me/initialize", initialize_profile),
     path("users/me/posts", my_posts),
 ]
 
