@@ -9,7 +9,9 @@ from .profile_views import (
     get_firestore,
     check_email_verification,
 )
-from .registration_permissions import get_registration_state
+from .registration_permissions import (
+    get_registration_state as resolve_registration_state,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +30,10 @@ def get_registration_state(request):
         return verification_error
 
     try:
-        state, diagnosis_id = get_registration_state(
-            user["uid"],
-            get_firestore(),
-        )
+        state, diagnosis_id = resolve_registration_state(
+        user["uid"],
+        get_firestore(),
+    )
 
         return JsonResponse({
             "registrationState": state,
