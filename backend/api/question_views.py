@@ -60,7 +60,7 @@ def get_today_question(request):
             not isinstance(text, str)
             or not text.strip()
             or not isinstance(options, list)
-            or len(options) != 4
+            or len(options) not in (3, 4)
             or not all(
                 isinstance(item, str) and item.strip()
                 for item in options

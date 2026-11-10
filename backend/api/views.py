@@ -32,7 +32,7 @@ def _format_timestamp(value):
     return None
 
 
-def _enrich_posts(db, documents):
+def _enrich_posts(db, documents, viewer_uid):
     """
     投稿にユーザー名・診断タイプ・問い情報を結合する。
 
@@ -83,6 +83,26 @@ def _enrich_posts(db, documents):
             if snapshot.exists:
                 questions[snapshot.id] = snapshot.to_dict() or {}
 
+    
+    # ログインユーザー自身のいいね状態を一括取得
+    like_refs = [
+        db.collection("posts")
+        .document(doc.id)
+        .collection("likes")
+        .document(viewer_uid)
+        for doc in post_snapshots
+    ]
+
+    liked_post_ids = set()
+
+    if like_refs:
+        for snapshot in db.get_all(like_refs):
+            if snapshot.exists:
+                liked_post_ids.add(
+                    snapshot.reference.parent.parent.id
+                )
+
+
     results = []
 
     for doc in post_snapshots:
@@ -126,6 +146,7 @@ def _enrich_posts(db, documents):
             ),
             "likeCount": data.get("likeCount", 0),
             "createdAt": created_at,
+            "isLiked": doc.id in liked_post_ids,
         })
 
     results.sort(
@@ -184,7 +205,11 @@ def gets_all_posts(request):
 
             documents.extend(query.stream())
 
-        results = _enrich_posts(db, documents)
+        results = _enrich_posts(
+            db,
+            documents,
+            request.firebase_user["uid"],
+        )
 
         return JsonResponse(
             {"posts": results[:50]},
@@ -222,7 +247,12 @@ def my_posts(request):
             .stream()
         )
 
-        results = _enrich_posts(db, documents)
+        
+        results = _enrich_posts(
+            db,
+            documents,
+            uid,
+        )
 
         return JsonResponse(
             {"posts": results},
@@ -235,5 +265,96 @@ def my_posts(request):
 
         return JsonResponse(
             {"error": "User posts unavailable"},
+            status=503,
+        )
+
+
+@require_GET
+@require_firebase_auth
+@require_registration_completed
+def get_question_posts(request, question_id):
+    """指定した問いに紐づく公開投稿を取得する。"""
+
+    today = datetime.now(JST).date().isoformat()
+
+    try:
+        # Firestoreの不正なドキュメントパスを防ぐ
+        from datetime import date
+
+        parsed = date.fromisoformat(question_id)
+
+        if parsed.isoformat() != question_id:
+            raise ValueError
+
+    except (ValueError, TypeError):
+        return JsonResponse(
+            {"error": "Invalid questionId"},
+            status=400,
+        )
+
+    try:
+        db = firestore.Client()
+
+        # 問いの存在と公開期限を確認
+        question_snapshot = (
+            db.collection("questions")
+            .document(question_id)
+            .get()
+        )
+
+        if not question_snapshot.exists:
+            return JsonResponse(
+                {"error": "Question not found"},
+                status=404,
+            )
+
+        question = question_snapshot.to_dict() or {}
+
+        publish_date = question.get("publishDate")
+        archive_until = question.get("archiveUntil")
+
+        if (
+            not isinstance(publish_date, str)
+            or not isinstance(archive_until, str)
+            or publish_date != question_id
+            or not publish_date <= today <= archive_until
+        ):
+            return JsonResponse(
+                {"error": "Question posts unavailable"},
+                status=403,
+            )
+
+        # 指定された問いの投稿だけを取得
+        documents = (
+            db.collection("posts")
+            .where("questionId", "==", question_id)
+            .limit(50)
+            .stream()
+        )
+
+        # 既存のユーザー情報・タイプ情報結合を再利用
+        posts = _enrich_posts(
+            db,
+            documents,
+            request.firebase_user["uid"],
+        )
+
+        return JsonResponse(
+            {
+                "questionId": question_id,
+                "posts": posts,
+            },
+            status=200,
+            json_dumps_params={"ensure_ascii": False},
+        )
+
+    except Exception:
+        logger.exception(
+            "Failed to retrieve question posts: %s",
+            question_id,
+        )
+
+        return JsonResponse(
+            {"error": "Question posts unavailable"},
             status=503,
         )

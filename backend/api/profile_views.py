@@ -369,19 +369,37 @@ def update_my_profile(request):
             status=400,
         )
 
+     # ユーザー名・自己紹介の正規化
     name = name.strip()
+    bio = bio.strip()
 
-    if not name or len(name) > 30:
+    # ユーザー名：1〜30文字、制御文字禁止
+    if (
+        not 1 <= len(name) <= 30
+        or any(
+            ord(ch) < 32 or ord(ch) == 127
+            for ch in name
+        )
+    ):
         return JsonResponse(
-            {"error": "name must be 1 to 50 characters"},
+            {"error": "Invalid username (1-30 characters)"},
             status=400,
         )
 
-    if len(bio) > 120:
+    # 自己紹介：最大120文字、改行・タブは許可
+    if (
+        len(bio) > 120
+        or any(
+            (ord(ch) < 32 and ch not in "\n\r\t")
+            or ord(ch) == 127
+            for ch in bio
+        )
+    ):
         return JsonResponse(
-            {"error": "bio must be 300 characters or fewer"},
+            {"error": "Invalid bio (maximum 120 characters)"},
             status=400,
         )
+
 
     # ⑥ Firestoreの本人のドキュメントを更新
     try:

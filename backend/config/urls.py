@@ -18,7 +18,15 @@ Including another URLconf
 from django.http import JsonResponse
 from django.urls import path
 
-from api.views import health, gets_all_posts, my_posts
+
+from api.views import (
+    health,
+    gets_all_posts,
+    my_posts,
+    get_question_posts,
+)
+
+
 from api.profile_views import (
     initialize_profile,
     my_profile,
@@ -27,6 +35,12 @@ from api.profile_views import (
 from django.views.decorators.csrf import csrf_exempt
 from api.registration_views import get_registration_state
 from api.post_views import create_post
+
+from api.question_answer_views import (
+    save_question_answer,
+    get_my_question_answer,
+    get_question_results,
+)
 
 
 
@@ -44,6 +58,10 @@ from api.question_views import (
     get_today_question,
     get_archived_questions,
 )
+
+from api.post_like_views import post_like
+
+from api.post_comment_views import post_comments
 
 
 @csrf_exempt
@@ -104,6 +122,51 @@ urlpatterns = [
 
     
     path("questions/archive", get_archived_questions),
+
+    
+    # 今日の問いへの選択回答保存
+    path(
+        "questions/<str:question_id>/answer",
+        save_question_answer,
+    ),
+
+    
+    # 自分が選択した回答
+    path(
+        "questions/<str:question_id>/answer/me",
+        get_my_question_answer,
+    ),
+
+    # 選択肢別の回答数・割合
+    path(
+        "questions/<str:question_id>/results",
+        get_question_results,
+    ),
+
+    
+    path(
+        "questions/<str:question_id>/posts",
+        get_question_posts,
+    ),
+
+
+    # 投稿へのいいね追加・解除
+    path(
+        "posts/<str:post_id>/like",
+        post_like,
+    ),
+
+
+    # 投稿へのコメント作成・取得
+    path(
+        "posts/<str:post_id>/comments",
+        post_comments,
+    ),
+
+
+
+
+
 
 ]
 
