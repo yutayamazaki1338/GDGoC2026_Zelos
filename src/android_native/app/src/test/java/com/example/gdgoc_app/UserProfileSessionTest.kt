@@ -106,4 +106,19 @@ class UserProfileSessionTest {
         assertEquals(ProfileStatus.Error, session.state.value.status)
         assertNull(session.state.value.profile)
     }
+    @Test fun registrationGateNeverEagerlyInitializesAndOnlyAcceptsCurrentOwner() = runTest {
+        val auth=MutableStateFlow<User?>(account)
+        val api=Profiles()
+        val session=UserProfileSession(auth,api,backgroundScope,autoInitialize=false)
+        runCurrent();session.retry();runCurrent()
+        assertEquals(0,api.calls);assertEquals(ProfileStatus.Loading,session.state.value.status)
+        session.acceptRegisteredProfile(account.copy(id="wrong"))
+        assertNull(session.state.value.profile)
+        session.acceptRegisteredProfile(account.copy(name="入力した名前"))
+        assertEquals(ProfileStatus.Ready,session.state.value.status)
+        auth.value=null;runCurrent();assertNull(session.state.value.profile)
+        auth.value=account.copy(id="other");runCurrent()
+        session.acceptRegisteredProfile(account)
+        assertNull(session.state.value.profile);assertEquals(0,api.calls)
+    }
 }

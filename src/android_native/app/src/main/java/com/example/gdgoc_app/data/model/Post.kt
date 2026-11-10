@@ -28,7 +28,16 @@ data class Post(
     val createdAt: String = "",
 
     @SerializedName("likeCount")
-    val likeCount: Int = 0
+    val likeCount: Int = 0,
+    val questionId: String? = null,
+    val typeCodeAtPost: String? = null,
+    val typeName: String? = null,
+    val selectedOptionIndex: Int? = null,
+    val liked: Boolean = false,
+    val questionText: String? = null,
+    val questionTag: String? = null,
+    val publishDate: String? = null,
+    val archiveUntil: String? = null
 ) {
     /**
      * 表示用の投稿日時フォーマット（例: 2026/11/08 12:00）

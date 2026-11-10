@@ -1,0 +1,650 @@
+/* Diagnosis uses the same paper, lavender, mint and safe-area rhythm as the feed. */
+.life-quiz-body {
+  padding: 14px 20px calc(120px + var(--safe-bottom));
+}
+.life-quiz .progress-meta {
+  font-size: 13px;
+}
+.life-quiz .progress-meta > .pill {
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.life-quiz .progress {
+  margin: 14px 0 28px;
+}
+.life-instruction {
+  margin: 12px 0;
+  font-size: 12px;
+  color: #777084;
+  line-height: 1.8;
+}
+.life-question-title {
+  min-height: 64px;
+  margin: 0 0 22px;
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.65;
+  letter-spacing: -0.035em;
+}
+.life-question-title:focus {
+  outline: none;
+}
+.life-poles {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.life-poles > div {
+  padding: 16px 13px;
+  border: 1px solid #e4ddef;
+  border-radius: 16px;
+  background: #f4f0fc;
+}
+.life-poles > div:last-child {
+  background: #edf7f3;
+  border-color: #d7e9e3;
+}
+.life-poles > div.chosen {
+  border-color: #8b7cf6;
+  box-shadow: inset 0 0 0 1px #8b7cf6;
+}
+.life-poles > div.chosen:last-child {
+  border-color: #499781;
+  box-shadow: inset 0 0 0 1px #499781;
+}
+.life-poles small {
+  display: block;
+  margin-bottom: 10px;
+  color: #75658f;
+  font-size: 10px;
+  font-weight: 600;
+}
+.life-poles > div:last-child small {
+  color: #507b6d;
+}
+.life-poles p {
+  font-size: 15px;
+  line-height: 1.9;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.life-answers {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+}
+.life-answers label {
+  position: relative;
+  cursor: pointer;
+}
+.life-answers input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.life-answers label:has(input:focus-visible) {
+  outline: 2px solid #6858bb;
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+.bipolar-answers {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 5px;
+}
+.bipolar-answers label {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 89px;
+  text-align: center;
+}
+.life-answer-dot {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  background: white;
+  border: 1.5px solid #c4b9d5;
+  border-radius: 50%;
+  color: #897c9b;
+}
+.bipolar-answers label:nth-of-type(n + 4) .life-answer-dot {
+  border-color: #a8cabe;
+}
+.bipolar-answers label:nth-of-type(2) .life-answer-dot,
+.bipolar-answers label:nth-of-type(4) .life-answer-dot {
+  width: 38px;
+  height: 38px;
+  margin: 3px 0;
+}
+.bipolar-answers label:nth-of-type(3) .life-answer-dot {
+  width: 32px;
+  height: 32px;
+  margin: 6px 0;
+  border-color: #c4c0ca;
+}
+.life-answer-label {
+  color: #756d81;
+  font-size: 10px;
+  line-height: 1.6;
+}
+.life-answers .selected .life-answer-dot {
+  background: #8b7cf6;
+  border-color: #8b7cf6;
+  color: white;
+}
+.bipolar-answers label.selected:nth-of-type(n + 4) .life-answer-dot {
+  background: #499781;
+  border-color: #499781;
+}
+.life-answers .selected .life-answer-label {
+  color: #4d4069;
+  font-weight: 600;
+}
+.agreement-answers {
+  display: grid;
+  gap: 9px;
+}
+.agreement-answers label {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 15px;
+  min-height: 54px;
+  background: white;
+  border: 1px solid #e5dfec;
+  border-radius: 13px;
+}
+.agreement-answers .life-answer-dot {
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.agreement-answers .life-answer-label {
+  font-size: 13px;
+}
+.agreement-answers .selected {
+  background: #f4f0fd;
+  border-color: #8b7cf6;
+}
+.life-result-content,
+.diagnostics-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.life-result-hero {
+  padding: 28px 19px;
+  text-align: center;
+  border-radius: 22px;
+  background: linear-gradient(145deg, #f0eafb, #edf6f2);
+}
+.life-result-hero > small {
+  font-size: 11px;
+  color: #77678f;
+}
+.life-code {
+  margin: 9px 0 16px;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: #77678f;
+}
+.life-result-hero h2 {
+  margin-top: 19px;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.6;
+  letter-spacing: -0.04em;
+}
+.life-result-hero p {
+  margin: 13px 0 20px;
+  font-size: 13px;
+  line-height: 1.9;
+  color: #71647f;
+}
+.life-now-label {
+  display: block;
+  font-size: 10px;
+  line-height: 1.8;
+  color: #7e728a;
+}
+.life-previous-type {
+  display: grid;
+  gap: 5px;
+  padding-top: 14px;
+  margin: 0 0 18px;
+  border-top: 1px solid #ded7e8;
+  color: #77678f;
+}
+.life-previous-type small,
+.life-previous-type span {
+  font-size: 10px;
+}
+.life-previous-type strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+.life-section-caption {
+  margin: 10px 0 16px;
+  color: #82778e;
+  font-size: 11px;
+  line-height: 1.9;
+}
+.life-balance-list {
+  display: grid;
+  gap: 24px;
+}
+.life-axis-labels,
+.life-axis-values {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.life-axis-labels {
+  font-size: 11px;
+  line-height: 1.7;
+  margin-bottom: 12px;
+}
+.life-axis-labels > span:first-child {
+  color: #8469ac;
+}
+.life-axis-labels > span:last-child {
+  color: #448674;
+}
+.life-axis-labels b {
+  color: #80708e;
+  font-size: 10px;
+}
+.life-axis-values {
+  margin: 7px 0 9px;
+  font-size: 18px;
+  color: #635375;
+  font-variant-numeric: tabular-nums;
+}
+.life-axis-values small,
+.life-indicator strong small {
+  font-size: 10px;
+  font-weight: 400;
+  color: #8b7f97;
+}
+.life-balance-track {
+  position: relative;
+  display: flex;
+  height: 11px;
+  border-radius: 8px;
+  background: #eeeaf3;
+  overflow: hidden;
+}
+.life-balance-track > i {
+  display: block;
+  height: 100%;
+  flex-shrink: 0;
+}
+.life-balance-left {
+  background: #a18ac8;
+}
+.life-balance-right {
+  background: #6cb8a6;
+}
+.life-balance-row + .life-balance-row {
+  margin-top: 8px;
+}
+.life-gauge-period {
+  color: #81738f;
+  font-size: 10px;
+}
+.life-midline {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: 50%;
+  border-left: 1px solid #ffffffb0;
+}
+.life-boundary {
+  margin-top: 10px;
+  border-left: 2px solid #d6c7e9;
+  padding: 1px 0 1px 9px;
+  color: #83728e;
+  font-size: 10px;
+  line-height: 1.9;
+}
+.life-previous {
+  margin-top: 10px;
+  color: #77638f;
+  font-size: 11px;
+  line-height: 1.9;
+}
+.life-indicator {
+  margin-top: 20px;
+}
+.life-indicator > div:first-child,
+.life-indicator h4 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.life-indicator > div:first-child {
+  justify-content: space-between;
+}
+.life-indicator h4 {
+  font-size: 13px;
+  font-weight: 500;
+}
+.life-indicator h4 > span {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  border-radius: 8px;
+  font-size: 11px;
+  color: #6d5ba0;
+  background: #eee9fa;
+}
+.life-indicator strong {
+  font-size: 19px;
+  color: #756292;
+}
+.life-indicator p {
+  margin: 8px 0;
+  font-size: 10px;
+  color: #81758f;
+  line-height: 1.8;
+}
+.life-concrete-track {
+  height: 7px;
+  border-radius: 5px;
+  background: #f0ebf7;
+  overflow: hidden;
+}
+.life-concrete-track > i {
+  display: block;
+  height: 100%;
+  background: #ab97ce;
+  border-radius: inherit;
+}
+.life-concrete-row-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.life-concrete-row-heading > small {
+  color: #81758f;
+  font-size: 10px;
+}
+.life-concrete-row.with-period + .life-concrete-row {
+  margin-top: 8px;
+}
+.life-concrete-row.is-previous .life-concrete-track > i {
+  background: #b9accb;
+}
+.life-concrete > .life-section-caption:last-child {
+  margin-bottom: 0;
+  margin-top: 20px;
+}
+/* One inset panel per meaning: labels, both observations and their delta stay together. */
+.life-balance-list.is-comparing {
+  gap: 12px;
+}
+.is-comparing .life-balance-item,
+.life-concrete.is-comparing .life-indicator {
+  padding: 12px;
+  border: 1px solid #ece6f2;
+  border-radius: 13px;
+  background: #fbf9fd;
+}
+.is-comparing .life-axis-labels {
+  margin-bottom: 8px;
+}
+.is-comparing .life-balance-row.with-period {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 6px;
+  row-gap: 4px;
+}
+.is-comparing .life-gauge-period {
+  grid-row: 1 / 3;
+}
+.is-comparing .life-axis-values {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.is-comparing .life-balance-track {
+  grid-column: 2;
+  height: 8px;
+}
+.is-comparing .life-previous {
+  margin-top: 8px;
+  font-size: 10px;
+  line-height: 1.7;
+}
+.life-concrete.is-comparing .life-indicator {
+  margin-top: 12px;
+}
+.life-concrete.is-comparing .life-indicator p {
+  margin: 6px 0 10px;
+}
+.life-concrete.is-comparing .life-concrete-row-heading strong {
+  font-size: 14px;
+  line-height: 1.4;
+}
+.life-concrete.is-comparing .life-indicator .life-indicator-change {
+  margin: 8px 0 0;
+}
+.life-profile-invitation > small {
+  color: #8d78b2;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+.life-profile-invitation > h3 {
+  margin: 8px 0 14px;
+  font-size: 16px;
+  line-height: 1.8;
+  font-weight: 600;
+}
+.life-preview-question {
+  margin-bottom: 12px;
+  color: #71647f;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.life-post-previews {
+  display: grid;
+  gap: 10px;
+}
+.life-post-preview {
+  padding: 16px;
+  border: 1px solid #e9e3f0;
+  border-radius: 16px;
+  background: white;
+}
+.life-preview-author {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+.life-preview-author strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+}
+.life-preview-author small {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: #8d78a2;
+}
+.life-post-preview > p {
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.9;
+  color: #5d5369;
+}
+.life-invitation-action {
+  margin-top: 14px;
+  padding: 22px 16px;
+  border-radius: 17px;
+  background: #efedf8;
+  text-align: center;
+}
+.life-invitation-action h3 {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.8;
+}
+.life-invitation-action p {
+  margin: 9px 0 18px;
+  color: #81728f;
+  font-size: 11px;
+  line-height: 1.9;
+}
+.life-invitation-action .primary {
+  padding-inline: 12px;
+  font-size: 12px;
+}
+.life-community {
+  padding: 24px 18px;
+  border-radius: 20px;
+  background: #efedf8;
+  text-align: center;
+}
+.life-community > svg {
+  margin: 0 auto 13px;
+  color: #8d78b2;
+}
+.life-community h3 {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.8;
+}
+.life-community p {
+  margin: 11px 0 18px;
+  color: #81728f;
+  font-size: 11px;
+  line-height: 2;
+}
+.life-community > small {
+  display: block;
+  font-size: 10px;
+  color: #8a7c99;
+  margin-top: 12px;
+  line-height: 1.8;
+}
+.life-community .primary {
+  font-size: 12px;
+  padding-inline: 12px;
+}
+.life-notice {
+  font-size: 10px;
+  color: #877b93;
+  line-height: 2;
+}
+.life-record-date {
+  color: #8d8099;
+  font-size: 10px;
+  text-align: right;
+}
+.life-start {
+  padding: 8px 0;
+}
+.life-start-symbol {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 26px;
+  border-radius: 23px;
+  background: #eeebf9;
+  color: #9a85c0;
+}
+.life-start > small {
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  color: #9b88b8;
+}
+.life-start h2 {
+  margin: 14px 0;
+  font-size: 25px;
+  font-weight: 500;
+  line-height: 1.8;
+  letter-spacing: -0.05em;
+}
+.life-start > p:not(.life-notice) {
+  font-size: 12px;
+  line-height: 2;
+  color: #85788f;
+}
+.life-start-parts {
+  display: grid;
+  gap: 15px;
+  padding: 24px 0;
+  margin: 10px 0;
+}
+.life-start-parts > div {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.life-start-parts b {
+  color: #b2a0cc;
+  font-size: 23px;
+  font-weight: 400;
+}
+.life-start-parts span {
+  font-size: 14px;
+}
+.life-start-parts small {
+  display: block;
+  margin-top: 6px;
+  color: #90819d;
+  font-size: 11px;
+}
+.life-start .life-start-meta {
+  text-align: center;
+  margin: 12px 0 22px;
+  font-size: 10px !important;
+}
+.life-comparison-title {
+  font-size: 14px;
+  margin: 24px 0 20px;
+  font-weight: 500;
+}
+@media (max-width: 350px) {
+  .life-quiz-body {
+    padding-inline: 16px;
+  }
+  .life-quiz .progress {
+    margin-bottom: 20px;
+  }
+  .life-question-title {
+    min-height: 54px;
+    margin-bottom: 16px;
+  }
+  .life-poles {
+    gap: 8px;
+    margin-bottom: 22px;
+  }
+  .life-poles > div {
+    padding-inline: 10px;
+  }
+  .life-poles p {
+    font-size: 14px;
+  }
+  .life-start h2 {
+    font-size: 22px;
+  }
+  .life-result-hero h2 {
+    font-size: 25px;
+  }
+}

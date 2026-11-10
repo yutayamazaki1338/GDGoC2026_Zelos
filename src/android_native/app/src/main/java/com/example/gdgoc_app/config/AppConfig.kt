@@ -14,7 +14,16 @@ data class AppConfig(
     val apiBaseUrl: String = "",
 
     @SerializedName("useMockData")
-    val useMockData: Boolean = true
+    val useMockData: Boolean = true,
+
+    @SerializedName("diagnosisApiEnabled")
+    val diagnosisApiEnabled: Boolean = false,
+
+    @SerializedName("diagnosisPreviewEnabled")
+    val diagnosisPreviewEnabled: Boolean = false,
+
+    @SerializedName("registrationApiEnabled")
+    val registrationApiEnabled: Boolean = false
 ) {
     /**
      * 設定値のバリデーションを行います。

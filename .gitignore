@@ -20,3 +20,8 @@ src/android_native/.gradle/
 src/android_native/build/
 src/android_native/app/build/
 src/android_native/local.properties
+
+
+
+# ZIPアーカイブをGit管理対象から除外
+*.zip

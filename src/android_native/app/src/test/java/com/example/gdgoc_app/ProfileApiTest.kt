@@ -19,7 +19,20 @@ class ProfileApiTest {
             Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1)
                 .code(status).message("test").body(body.toResponseBody()).build()
         }.build()
-        return ApiClient("https://example.invalid", client = client, tokenProvider = { "synthetic-test-value" })
+        return ApiClient("https://example.invalid", client = client, tokenProvider = { "synthetic-test-value" }, errorLogger = {})
+    }
+
+    @Test fun additionalDiagnosisProfileFieldsAreReadWithoutBreakingExistingFields() = runTest {
+        val body=com.google.gson.JsonParser.parseString(json).asJsonObject
+        body.add("latestDiagnosis",com.google.gson.JsonParser.parseString("""{"id":"result-id","typeCode":"GXPD","description":"短い説明"}"""))
+        body.addProperty("diagnosisOnboarding","completed")
+        val user=ApiUserRepository(api(body=body.toString())).getMyProfile()
+        val summary=requireNotNull(user.latestDiagnosis)
+        assertEquals("result-id",summary.id)
+        assertEquals("GXPD",summary.typeCode)
+        assertEquals("短い説明",summary.description)
+        assertEquals("completed",user.diagnosisOnboarding)
+        assertEquals("保存済み表示名",user.name)
     }
 
     @Test fun initializeHandlesCreatedAndExistingWithoutSendingUid() = runTest {
@@ -68,7 +81,7 @@ class ProfileApiTest {
     @Test fun networkFailureDoesNotExposeExceptionDetails() = runTest {
         val http = OkHttpClient.Builder().addInterceptor { throw IOException("private network details") }.build()
         try {
-            ApiUserRepository(ApiClient("https://example.invalid", client = http, tokenProvider = { "synthetic" })).getMyProfile()
+            ApiUserRepository(ApiClient("https://example.invalid", client = http, tokenProvider = { "synthetic" }, errorLogger = {})).getMyProfile()
             fail("Network failure must fail")
         } catch (e: ApiException) { assertFalse(e.message!!.contains("private")) }
     }

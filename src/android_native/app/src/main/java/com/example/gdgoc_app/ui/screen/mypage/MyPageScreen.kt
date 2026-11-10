@@ -34,6 +34,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import coil.compose.AsyncImage
+import com.example.gdgoc_app.ui.screen.diagnosis.DiagnosisSummaryViewModel
+import com.example.gdgoc_app.ui.screen.diagnosis.DiagnosisProfileSection
 import androidx.compose.ui.layout.ContentScale
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import androidx.compose.runtime.Composable
@@ -60,6 +62,11 @@ import com.example.gdgoc_app.ui.component.PostCard
 @Composable
 fun MyPageScreen(
     onLogout: () -> Unit,
+    onEditProfile: () -> Unit,
+    diagnosisSummaryViewModel: DiagnosisSummaryViewModel,
+    onStartDiagnosis: () -> Unit,
+    onLatestDiagnosis: () -> Unit,
+    onPreviewDiagnosis: (() -> Unit)?,
     viewModel: MyPageViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -194,6 +201,13 @@ fun MyPageScreen(
                                     )
 
                                     Spacer(modifier = Modifier.height(16.dp))
+
+                                    DiagnosisProfileSection(diagnosisSummaryViewModel,
+                                        onStartDiagnosis, onLatestDiagnosis, onPreviewDiagnosis)
+
+                                    OutlinedButton(onClick = onEditProfile, enabled = !uiState.isLoading) {
+                                        Text("プロフィールを編集")
+                                    }
 
                                     OutlinedButton(onClick = { viewModel.showLogoutDialog() }, enabled = !uiState.isLoading) {
                                         Icon(

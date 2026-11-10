@@ -69,6 +69,12 @@ class MyPageViewModel(
         }
     }
 
+    fun applyUpdatedProfile(user: User) {
+        if (authRepository.currentUser.value?.id != user.id || loggingOut) return
+        loadJob?.cancel()
+        _uiState.update { it.copy(user = user, isLoading = false, errorMessage = null) }
+    }
+
     fun showLogoutDialog() { _uiState.update { it.copy(showLogoutDialog = true) } }
     fun dismissLogoutDialog() { _uiState.update { it.copy(showLogoutDialog = false) } }
     fun logout() {

@@ -50,6 +50,22 @@ class MyPageProfileTest {
         assertTrue(vm.uiState.value.userPosts.isEmpty())
     }
 
+    @Test fun savedServerProfileUpdatesCardWithoutDiscardingPostsAndRejectsOtherAccount() = runTest(dispatcher) {
+        val users = MutableStateFlow<User?>(account)
+        val vm = MyPageViewModel(posts(), auth(users), Profiles()) { users.value = null }
+        store.put("page", vm); runCurrent()
+        val previousPosts = vm.uiState.value.userPosts
+        val saved = account.copy(name = "更新後の名前", bio = "更新後の自己紹介")
+        vm.applyUpdatedProfile(saved)
+        assertEquals(saved, vm.uiState.value.user)
+        assertEquals(previousPosts, vm.uiState.value.userPosts)
+        vm.applyUpdatedProfile(saved.copy(id = "other"))
+        assertEquals(saved, vm.uiState.value.user)
+        users.value = null; runCurrent()
+        vm.applyUpdatedProfile(saved)
+        assertNull(vm.uiState.value.user)
+    }
+
     @Test fun failedFetchAfterAccountChangeCannotDisplayPreviousUser() = runTest(dispatcher) {
         val users = MutableStateFlow<User?>(account)
         val profiles = Profiles()

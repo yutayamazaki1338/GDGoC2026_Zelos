@@ -18,7 +18,8 @@ data class ProfileState(
 class UserProfileSession(
     private val authUsers: StateFlow<User?>,
     private val repository: UserRepository,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val autoInitialize: Boolean = true
 ) {
     private val lock = Any()
     private var generation = 0L
@@ -34,16 +35,27 @@ class UserProfileSession(
                     initialization?.cancel()
                     initialization = null
                     _state.value = ProfileState()
-                    authUsers.value?.let { startLocked(it) }
+                    authUsers.value?.let {
+                        if (autoInitialize) startLocked(it)
+                        else _state.value = ProfileState(ProfileStatus.Loading,it.id)
+                    }
                 }
             }
         }
     }
 
     fun retry() = synchronized(lock) {
+        if (!autoInitialize) return@synchronized
         val user = authUsers.value ?: return@synchronized
         if (initialization?.isActive == true || _state.value.status != ProfileStatus.Error || _state.value.userId != user.id) return@synchronized
         startLocked(user)
+    }
+
+    fun acceptRegisteredProfile(profile: User) = synchronized(lock) {
+        val user=authUsers.value ?: return@synchronized
+        if (autoInitialize || !user.emailVerified || profile.id!=user.id) return@synchronized
+        generation++; initialization?.cancel()
+        _state.value=ProfileState(ProfileStatus.Ready,user.id,profile)
     }
 
     private fun startLocked(user: User) {

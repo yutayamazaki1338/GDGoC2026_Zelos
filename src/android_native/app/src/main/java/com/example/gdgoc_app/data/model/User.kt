@@ -27,5 +27,13 @@ data class User(
     val avatarUrl: String = "",
 
     @SerializedName("createdAt")
-    val createdAt: String = ""
+    val createdAt: String = "",
+
+    @SerializedName("latestDiagnosis")
+    val latestDiagnosis: DiagnosisProfileSummary? = null,
+
+    @SerializedName("diagnosisOnboarding")
+    val diagnosisOnboarding: String? = null
 )
+
+data class DiagnosisProfileSummary(val id: String, val typeCode: String, val description: String)
