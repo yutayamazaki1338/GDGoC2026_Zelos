@@ -266,27 +266,6 @@ def get_latest_diagnosis(request):
 
     profile_ref = db.collection("users").document(uid)
 
-    # 既存ユーザーのlatestDiagnosisがあれば優先する
-    profile = profile_ref.get()
-
-    if profile.exists:
-        latest = (profile.to_dict() or {}).get("latestDiagnosis")
-
-        if isinstance(latest, dict) and latest.get("id"):
-            snapshot = (
-                profile_ref.collection("diagnoses")
-                .document(latest["id"])
-                .get()
-            )
-
-            if snapshot.exists:
-                return JsonResponse(
-                    diagnosis_to_response(snapshot),
-                    json_dumps_params={"ensure_ascii": False},
-                )
-
-    # プロフィールがない場合、または最新結果の参照がない場合
-    # 診断履歴からcompletedAtが最も新しい1件を取得する
     query = (
         profile_ref.collection("diagnoses")
         .order_by(
