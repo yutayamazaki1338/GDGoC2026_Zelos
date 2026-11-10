@@ -2,7 +2,11 @@
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from google.cloud import firestore
-from google.api_core.exceptions import AlreadyExists, GoogleAPICallError
+from google.api_core.exceptions import (
+    AlreadyExists,
+    GoogleAPICallError,
+    NotFound,
+)
 from django.views.decorators.csrf import csrf_exempt
 
 from .authentication import require_firebase_auth
@@ -10,6 +14,7 @@ import json
 from .registration_permissions import require_registration_completed
 from .registration_permissions import get_registration_state
 from .diagnosis_questions import TYPE_MAP
+
 
 def get_firestore():
     """Firestoreクライアントを取得する"""
@@ -136,6 +141,34 @@ def initialize_profile(request):
                 status=400,
             )
 
+
+        
+        # 初回プロフィール登録時の自己紹介
+        # 未指定の場合は空文字として扱う
+        requested_bio = payload.get("bio", "")
+
+        if not isinstance(requested_bio, str):
+            return JsonResponse(
+                {"error": "Bio must be a string"},
+                status=400,
+            )
+
+        bio = requested_bio.strip()
+
+        if (
+            len(bio) > 120
+            or any(
+                ord(ch) < 32 and ch not in "\n\r\t"
+                or ord(ch) == 127
+                for ch in bio
+            )
+        ):
+            return JsonResponse(
+                {"error": "Invalid bio"},
+                status=400,
+            )
+
+
         diagnosis_ref = (
             profile_ref.collection("diagnoses")
             .document(diagnosis_id)
@@ -182,7 +215,7 @@ def initialize_profile(request):
                 profile_ref,
                 {
                     "name": name,
-                    "bio": "",
+                    "bio": bio,
                     "avatarUrl": "",
                     "createdAt": firestore.SERVER_TIMESTAMP,
                     "latestDiagnosis": latest_diagnosis,
@@ -289,10 +322,10 @@ def my_profile(request):
             status=503
         )
 
-
 @csrf_exempt
 @require_http_methods(["PATCH"])
 @require_firebase_auth
+@require_registration_completed
 def update_my_profile(request):
 
     # ① Firebase認証済みユーザーのUIDを取得
@@ -338,13 +371,13 @@ def update_my_profile(request):
 
     name = name.strip()
 
-    if not name or len(name) > 50:
+    if not name or len(name) > 30:
         return JsonResponse(
             {"error": "name must be 1 to 50 characters"},
             status=400,
         )
 
-    if len(bio) > 300:
+    if len(bio) > 120:
         return JsonResponse(
             {"error": "bio must be 300 characters or fewer"},
             status=400,

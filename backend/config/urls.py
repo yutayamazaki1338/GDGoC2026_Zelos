@@ -26,6 +26,8 @@ from api.profile_views import (
 )
 from django.views.decorators.csrf import csrf_exempt
 from api.registration_views import get_registration_state
+from api.post_views import create_post
+
 
 
 #診断関係のものをインポート
@@ -37,6 +39,12 @@ from api.diagnosis_views import (
     get_diagnosis_by_id,
     skip_initial_diagnosis,
 )
+
+from api.question_views import (
+    get_today_question,
+    get_archived_questions,
+)
+
 
 @csrf_exempt
 def my_profile_route(request):
@@ -54,10 +62,28 @@ def my_profile_route(request):
     return response
 
 
+#postの区別がつくように
+@csrf_exempt
+def posts_route(request):
+    if request.method == "GET":
+        return gets_all_posts(request)
+
+    if request.method == "POST":
+        return create_post(request)
+
+    response = JsonResponse(
+        {"error": "Method not allowed"},
+        status=405,
+    )
+    response["Allow"] = "GET, POST"
+    return response
+
+
 urlpatterns = [
     path("", health),
     path("health", health),
-    path("posts", gets_all_posts),
+    path("posts", posts_route),
+
     path("users/me", my_profile_route), #上の判別関数に飛んで、通信プロトコルの種類を分別する
     path("users/me/initialize", initialize_profile),
     path("users/me/registration", get_registration_state),
@@ -72,5 +98,12 @@ urlpatterns = [
 
     # 初回診断スキップ
     path("users/me/diagnosis-skip", skip_initial_diagnosis),
+
+    # 今日の問い
+    path("questions/today", get_today_question),
+
+    
+    path("questions/archive", get_archived_questions),
+
 ]
 
