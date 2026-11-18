@@ -26,7 +26,7 @@ GDGoC Japan 2026 Hackathonで開発したAndroidアプリです。16タイプの
 | 補助クライアント | `src/` 直下にFlutter/Dartの小規模クライアントとテストがあります。主アプリのAndroid実装とは別です。 |
 
 ## 3. システムアーキテクチャ
-
+![ミライログのシステムアーキテクチャ](出力.drawio.png)
 ```text
 Androidアプリ（Kotlin / Jetpack Compose）
   ├─ Firebase Authenticationでログイン
