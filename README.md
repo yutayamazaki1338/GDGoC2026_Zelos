@@ -210,7 +210,7 @@ gcloud run deploy mirailog-api \
 
 `--allow-unauthenticated` はFirebase IDトークンを使うアプリからCloud Runへ到達できるようにする設定です。Django側では保護対象APIのFirebase IDトークンを検証します。公開範囲やエンドポイントの扱いはデプロイ先のセキュリティ要件に合わせて確認してください。デプロイ後はCloud RunのURLをAndroid設定の `apiBaseUrl` に設定します。実際のデプロイ前に、プロジェクトID・リージョン・IAM・シークレット名を確認してください。
 
-## 10. 実装状況・既知の制約
+
 
 ## 10. 既知の制約
 
