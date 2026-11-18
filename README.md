@@ -212,10 +212,10 @@ gcloud run deploy mirailog-api \
 
 ## 10. 実装状況・既知の制約
 
-- 診断計算はバックエンドの20問・4軸・16タイプ判定を基準とし、AndroidはAPIから結果を取得します。診断の最新取得は `completedAt` 降順、履歴APIの既定件数は2件です。
-- 診断回答の生データではなく、診断結果・回答ハッシュ等が保存されます。投稿・問い回答などのFirestoreデータ構造はAPI実装に基づくもので、別のデータベーススキーマを前提にしていません。
-- `questions` の日付ドキュメントは実行前にFirestoreへ用意する必要があります。投稿の作成は当日の問いと保存済み回答に限定されます。いいね・コメントは問いの公開期間に制限されます。
-- バックエンドには単体テストがありますが、テスト成功は実Firebase/Firestore/Cloud Runとの結合確認を意味しません。Firebaseの実アカウント、対象プロジェクトのIAM、Firestoreデータが必要です。
-- Android向けのAPI接続記録（`src/android_native/docs/COMMUNITY_API_CONNECTION.md`）では、記録時点で `GET /questions/today` がCloud Run上で503となり、回答・投稿・いいね・コメントの実データを使った一連の書き込み確認は未完了とされています。サービス環境やデータが変わっている可能性があるため、利用前に対象環境で再確認してください。
-- 補助Flutterプロジェクトは主アプリと同等の機能・認証実装を持つものとして扱わないでください。
-- `.gitignore` は `.env`、サービスアカウントJSON、Androidのビルド成果物等を除外します。Firebaseクライアント設定はサーバー秘密鍵とは異なりますが、公開するFirebaseプロジェクトではAPIキー制限、Authentication設定、Firestore Security Rulesを確認してください。サーバー用認証情報や実際の秘密値はコミットしないでください。
+## 10. 既知の制約
+
+- 「今日の問い」はFirestoreに登録された日付別の質問データを使用するため、運用前に質問データの登録が必要です。
+- 投稿は当日の問いに回答したユーザーのみ作成できます。過去の問いはアーカイブとして閲覧できます。
+- `src/` 配下のFlutterプロジェクトは補助的な実装であり、主アプリは `src/android_native/` のKotlin/Jetpack Compose実装です。
+
+詳細なAPI仕様や実装・検証記録は、各ソースコードおよび `src/android_native/docs/` を参照してください。
